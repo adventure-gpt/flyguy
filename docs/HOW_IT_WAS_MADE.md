@@ -78,7 +78,7 @@ million samples.
 (128 games for the first four rows, 384 for the fifth and sixth, 256 for the last. A figure like this moves by 0.01 to 0.02 from one set of games
 to the next.)
 
-Reinforcement learning added nothing against Nexto: flyguy first lost ground, then came back to where the teaching had left it.
+In these simulated games reinforcement learning did not add to what the teaching had reached: flyguy first lost ground, then came back to the same level.
 
 ## 5. Where it stopped
 
@@ -89,6 +89,12 @@ Nothing tried after the teaching made it better.
 - Six more runs were started from the same network on four rented GPUs: more pull from the teacher, less, a newer
   teacher, teaching only, a higher learning rate. About 930 million samples in two hours. Against the network they
   started from, the best of them took 0.50 of the goals. None was better.
+
+**In the real game** the last version, after those 569 million samples, played the real Nexto
+1v1 until one side had 42 goals: 42 to 14 ([replay](https://ballchasing.com/replay/97a8cb48-3c3a-4e56-8753-494c1f710cc7)). Reaching 42 before Nexto reaches 28 is what the RLBot
+community calls nullifying Nexto. That is one match: 56 goals, 0.75 of them flyguy's, close to the simulator's 0.71. The versions from
+before the reinforcement learning were never put through such a match in the real game, so the simulator is the only
+place where the stages can be compared.
 
 So more samples and these settings are not what limits it. At three synapses and three million strengths, flyguy
 takes about 0.9 of the goals from Necto, well over half from Nexto, and never caught its teachers: about 0.45 of the

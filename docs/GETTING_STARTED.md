@@ -218,5 +218,6 @@ specific to flyguy:
   from RLBot's packets. To train in a simulator such as [RocketSim](https://github.com/ZealanL/RocketSim) (for
   example through [RLGym](https://rlgym.org/)) you fill the same game state from the simulator instead. A network
   trained from scratch does not have to keep any of this: give it your own observations and actions.
-- **What reinforcement learning did for flyguy** is in [HOW_IT_WAS_MADE.md](HOW_IT_WAS_MADE.md): against Nexto,
-  nothing. Its strength came from the teaching.
+- **What reinforcement learning did for flyguy** is in [HOW_IT_WAS_MADE.md](HOW_IT_WAS_MADE.md). In short: the
+  version that beat the real Nexto 42 to 14 is the one that had it, but in simulated games it took no larger a
+  share of the goals from Nexto than the taught network it started from.

@@ -8,6 +8,7 @@
   <img src="https://img.shields.io/badge/RLBot-v5-f97316" alt="RLBot v5">
   <img src="https://img.shields.io/badge/code-MIT-22c55e" alt="code: MIT">
   <img src="https://img.shields.io/badge/wiring-CC%20BY%204.0-64748b" alt="wiring: CC BY 4.0">
+  <a href="https://ballchasing.com/replay/97a8cb48-3c3a-4e56-8753-494c1f710cc7"><img src="https://img.shields.io/badge/real%20Nexto-42%20to%2014-ef4444" alt="42 to 14 against the real Nexto"></a>
 </p>
 
 <p align="center">
@@ -20,6 +21,9 @@
 simulated fly body moved by the same signals.<br>
 <a href="https://www.youtube.com/watch?v=e3WVd6I4pOU">▶ Watch a whole match on YouTube</a> (a later flyguy than the
 copy published here).</i></p>
+
+<p align="center"><b>42 to 14 against the real Nexto.</b> The last flyguy reached 42 goals before Nexto reached 28,
+which the RLBot community calls nullifying Nexto: <a href="https://ballchasing.com/replay/97a8cb48-3c3a-4e56-8753-494c1f710cc7">the replay</a>.</p>
 
 <p align="center">
   <a href="docs/GETTING_STARTED.md">Getting started</a> ·
@@ -68,8 +72,14 @@ same size, was not tested. More in [How it works](docs/HOW_IT_WORKS.md).
 ## How good is it?
 
 flyguy was taught by Whiskers, a self-play bot by the same authors, and then left to train by reinforcement
-learning. Measured 1v1 against [Nexto](https://github.com/Rolv-Arild/Necto) in simulation, with Nexto answering at the
-delay it has in the real game:
+learning.
+
+**In the real game** the last version, after 569 million moments of reinforcement learning, beat the real
+[Nexto](https://github.com/Rolv-Arild/Necto) 42 to 14 in one long 1v1 match ([replay](https://ballchasing.com/replay/97a8cb48-3c3a-4e56-8753-494c1f710cc7)). Reaching 42 goals
+before Nexto reaches 28 is the mark the RLBot community calls nullifying Nexto.
+
+**In simulation**, where hundreds of games can be played, 1v1 against a copy of Nexto that answers at the delay it has
+in the real game:
 
 | flyguy after | share of the goals against Nexto |
 |---|---|
@@ -81,7 +91,7 @@ delay it has in the real game:
 | then 201 million moments of reinforcement learning | 0.61 |
 | then 569 million | 0.71 |
 
-Reinforcement learning added nothing against Nexto: flyguy first lost ground, then came back to where the teaching had left it.
+In these simulated games reinforcement learning did not add to what the teaching had reached: flyguy first lost ground, then came back to the same level.
 
 The weights published here are an early flyguy on purpose. The RLBot bot pack only takes public bots under a strength
 line: a bot may not reach 42 goals before Nexto reaches 28, which is 60% of the goals. This copy sits just under that
