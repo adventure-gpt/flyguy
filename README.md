@@ -12,15 +12,16 @@
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=e3WVd6I4pOU">
+  <a href="https://www.youtube.com/watch?v=qX5y2Vg-_cM">
     <img src="docs/media/flyguy_scores.gif" width="720" alt="flyguy scores against Nexto while its network and a simulated fly body are shown beside the game">
   </a>
 </p>
 
 <p align="center"><i>flyguy (blue) scores on Nexto. Left: every neuron of its network firing as it decides, and a
 simulated fly body moved by the same signals.<br>
-<a href="https://www.youtube.com/watch?v=e3WVd6I4pOU">▶ Watch a whole match on YouTube</a> (a later flyguy than the
-copy published here).</i></p>
+<a href="https://www.youtube.com/watch?v=qX5y2Vg-_cM">▶ Watch a whole match on YouTube</a>: 7 to 3 against Nexto, with
+what is on screen explained as it plays (a later flyguy than the copy published here;
+<a href="https://www.youtube.com/watch?v=e3WVd6I4pOU">an earlier video</a>).</i></p>
 
 <p align="center"><b>42 to 14 against the real Nexto.</b> The last flyguy reached 42 goals before Nexto reached 28,
 which the RLBot community calls nullifying Nexto: <a href="https://ballchasing.com/replay/97a8cb48-3c3a-4e56-8753-494c1f710cc7">the replay</a>.</p>
