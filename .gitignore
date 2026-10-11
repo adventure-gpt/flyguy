@@ -5,6 +5,7 @@ __pycache__/
 venv/
 .pytest_cache/
 runs/
+data/
 *.log
 flyguy/native/*.exe
 flyguy/native/*.exp
