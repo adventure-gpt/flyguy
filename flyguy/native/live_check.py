@@ -61,7 +61,9 @@ if Path(args.sim).exists():
         n, od, na = struct.unpack("<qii", fh.read(16))
         sim_obs = torch.as_tensor(np.frombuffer(fh.read(n * od * 2), np.float16).reshape(n, od).astype(np.float32))
         sim_tl = torch.as_tensor(np.frombuffer(fh.read(n * na * 2), np.float16).reshape(n, na).astype(np.float32))
-    print(f"simulator reference ({n:,} recorded moments of the training recording, all modes):")
+    if na == 0:                                             # a file of observations only: the teacher answers here
+        sim_tl = answers(teacher, sim_obs)
+    print(f"reference ({n:,} recorded moments of {Path(args.sim).name}):")
     describe("simulator", answers(fly, sim_obs).argmax(-1), sim_tl)
 for f in files:
     raw = f.read_bytes()

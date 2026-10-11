@@ -22,7 +22,7 @@ simulated fly body moved by the same signals.<br>
 copy published here).</i></p>
 
 <p align="center">
-  <a href="#run-it">Run it</a> ·
+  <a href="docs/GETTING_STARTED.md">Getting started</a> ·
   <a href="#watch-it-think">Watch it think</a> ·
   <a href="docs/HOW_IT_WORKS.md">How it works</a> ·
   <a href="docs/HOW_IT_WAS_MADE.md">How it was made</a> ·
@@ -93,9 +93,9 @@ flyguy is a 1v1 bot. Most of the games it was taught on were 1v1, and with team-
 
 These are simulator numbers against a copy of Nexto. Nobody has counted a real 42-goal match.
 
-## Run it
+## Getting started with flyguy
 
-You need Windows or Linux, Python 3.11 or newer, Rocket League and [RLBot v5](https://rlbot.org/).
+**1. Set it up** (Windows shown; no graphics card needed to play):
 
 ```
 git clone https://github.com/adventure-gpt/flyguy
@@ -105,12 +105,25 @@ python -m venv .venv
 .venv\Scripts\python bot\run.py --selfcheck
 ```
 
-(On Linux: `.venv/bin/pip` and `.venv/bin/python bot/run.py`.) The self-check loads the network and times a decision
-without the game. Then add `bot/bot.toml` in the RLBot launcher and put **flyguy** in a match. One process drives all
-of flyguy's cars on a team, so it can be put in 2v2 and 3v3 too, where it is much weaker.
+You need Python 3.11 or newer and a folder without spaces in its path. The self-check loads the network and times a
+decision without the game.
 
-On Windows the bot plays through a small compiled forward pass (`flyguy/native/fly_infer.dll`, built from
-`fly_infer.cpp` in the same folder). Without it, or on Linux, PyTorch does the same job a little slower.
+**2. Play it in RLBot.** Install Rocket League and [RLBot v5](https://rlbot.org/v5), add `bot/bot.toml` to RLBot's
+bot list, put **flyguy** on a team and start a match. 1v1 is its game.
+
+**3. Train it.** A fly network can be taught from recorded game moments with one command, on your own graphics card:
+
+```
+.venv\Scripts\python flyguy\teach.py --data data\flyguy_selfplay_250k.bin --steps 6000
+```
+
+The moments are a [download](https://github.com/adventure-gpt/flyguy/releases/tag/moments-v1), or you record your own by
+letting flyguy play. What you taught then plays in RLBot like the original.
+
+**The full walk-through is [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md):** Linux, what to do when something
+does not work, the options, and an honest account of the training: what works out of the box (teaching), what is
+here as source (the CUDA trainer flyguy was made with), and what you would have to bring yourself (a simulator, for
+reinforcement learning).
 
 ## Watch it think
 
@@ -159,6 +172,7 @@ The whole story, with the numbers and the things that did not work, is in
 |---|---|
 | `bot/` | the RLBot v5 bot and its weights (`model.pt`) |
 | `flyguy/fly.py` | the network |
+| `flyguy/teach.py` | teach a fly network from recorded game moments (plain PyTorch) |
 | `flyguy/fly_cuda.py`, `flyguy/fly_native.py` | faster ways to train it on a GPU |
 | `flyguy/model.py`, `obs.py`, `actions.py`, `live.py`, ... | what the bot needs to play: observations, the 90 actions, the RLBot adapter |
 | `flyguy/native/` | the CUDA trainer and the bot's compiled forward pass, as source, with their tools |

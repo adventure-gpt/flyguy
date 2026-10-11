@@ -1,14 +1,14 @@
 """flyguy visualizer, step 2: a small local web server between a playing flyguy and the page that draws its brain.
 
-  uv run python flyguy/viz/server.py [--port 8765] [--record FILE] [--replay FILE] [--demo CHUNK.bin MODEL.pt]
+  uv run python flyguy/viz/server.py [--port 8765] [--record FILE] [--replay FILE] [--demo MOMENTS.bin MODEL.pt]
 
 Open http://localhost:8765 . The Flyguy bot (bot/run.py) writes every neuron's firing after each decision into a
 shared file (flyguy.fly.VizTap); this server hands the newest frame to the page (GET /frame?after=TICK waits up to 0.25 s
 for a newer one). Nothing here touches the bot: start and stop it at any time.
   --record FILE   also append every frame to FILE (for a later replay beside the game's own recording)
   --replay FILE   serve a recording at its own pace, in a loop, instead of the live bot
-  --demo CHUNK MODEL   no game needed: flyguy (a torch checkpoint) decides on recorded game moments from a training
-                  chunk, 15 times a second - real firing on real situations, for trying the page
+  --demo MOMENTS MODEL   no game needed: flyguy (a torch checkpoint) decides on recorded game moments (a file from
+                  make_demo.py), 15 times a second - real firing on real situations, for trying the page
 Standard library only (the demo needs torch and the repo)."""
 import argparse
 import json
@@ -30,7 +30,7 @@ ap.add_argument("--data", default=str(ROOT / "flyguy" / "graphs" / "viz"))
 ap.add_argument("--file", default=str(Path(tempfile.gettempdir()) / "flyguy_viz.bin"))
 ap.add_argument("--record")
 ap.add_argument("--replay")
-ap.add_argument("--demo", nargs=2, metavar=("CHUNK", "MODEL"))
+ap.add_argument("--demo", nargs=2, metavar=("MOMENTS", "MODEL"))
 ap.add_argument("--no-body", action="store_true", help="do not start the simulated fly body beside the page")
 ap.add_argument("--body-mode", default="tethered", choices=["free", "tethered"], help="how the fly starts: pinned in the air (T on the page lets it loose on the floor)")
 args = ap.parse_args()
