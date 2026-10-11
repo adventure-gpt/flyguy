@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+.venv_body/
+venv/
+.pytest_cache/
+runs/
+*.log
+flyguy/native/*.exe
+flyguy/native/*.exp
+flyguy/native/*.lib
+flyguy/native/*.obj
+flyguy/native/flyguy_core.dll
+flyguy/native/libflyguy_core.so
+# the whole graph (build it with flyguy/build_graph.py or take it from the release page)
+flyguy/graphs/male_cns_min2.npz

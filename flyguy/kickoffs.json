@@ -1,0 +1,41 @@
+{
+  "diagonal": {
+    "params": {
+      "t_straight": 57,
+      "steer": 0.7047264967374485,
+      "t_steer": 0,
+      "t_jump": 4,
+      "t_gap": 3,
+      "flip_yaw": -0.3149254209913715,
+      "t_cancel": 70,
+      "roll": 0.037669465936126245
+    },
+    "time_to_ball": 1.875
+  },
+  "offcenter": {
+    "params": {
+      "t_straight": 59,
+      "steer": 0.20416791098960896,
+      "t_steer": 20,
+      "t_jump": 10,
+      "t_gap": 4,
+      "flip_yaw": 0.24808132415861017,
+      "t_cancel": 70,
+      "roll": -1.0
+    },
+    "time_to_ball": 2.1666666666666665
+  },
+  "center": {
+    "params": {
+      "t_straight": 48,
+      "steer": 0.6583184664918262,
+      "t_steer": 8,
+      "t_jump": 7,
+      "t_gap": 2,
+      "flip_yaw": -0.30988956475337637,
+      "t_cancel": 70,
+      "roll": 0.5330485178364149
+    },
+    "time_to_ball": 2.45
+  }
+}

@@ -1,0 +1,5 @@
+# the bot and the visualizer's demo (CPU is enough)
+rlbot>=2.0.0.beta
+numpy
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.4

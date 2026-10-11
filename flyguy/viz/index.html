@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flyguy brain</title>
+<style>
+  :root { --ink: #dfe7ff; --dim: #7f8bb0; --line: rgba(160, 180, 255, .18); }
+  html, body { margin: 0; height: 100%; background: #02030a; color: var(--ink); overflow: hidden;
+               font: 13px/1.45 "Segoe UI", system-ui, sans-serif; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .hud { position: fixed; pointer-events: none; text-shadow: 0 0 6px #000, 0 0 2px #000; transition: opacity .25s; }
+  body.clean .hud, body.burned .hud, body.bare .hud { opacity: 0; }     /* burned: the words are drawn into the picture instead (stacked view); bare: nothing but the pictures (H) */
+  body.nocredit #credit { display: none; }
+  #gear { position: fixed; right: 14px; bottom: 10px; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: rgba(8, 10, 22, .7);
+          color: var(--dim); font-size: 17px; line-height: 28px; text-align: center; cursor: pointer; user-select: none; transition: opacity .25s; }
+  #gear:hover { color: var(--ink); border-color: #7f8bb0; }
+  body.bare #gear { opacity: 0; pointer-events: none; }
+  #menu { position: fixed; right: 14px; top: 14px; bottom: 50px; width: 372px; max-width: calc(100vw - 28px); overflow-y: auto; display: none; box-sizing: border-box;
+          padding: 14px 16px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(6, 8, 18, .93); backdrop-filter: blur(6px); }
+  #menu.open { display: block; }
+  #menu h2 { margin: 0 0 2px; font-size: 16px; font-weight: 600; }
+  #menu h3 { margin: 15px 0 5px; font-size: 11px; font-weight: 600; letter-spacing: 1.1px; text-transform: uppercase; color: #8fa0d8; border-bottom: 1px solid var(--line); padding-bottom: 3px; }
+  #menu .set { display: grid; grid-template-columns: 1fr 150px; gap: 10px; align-items: center; min-height: 27px; }
+  #menu .set label { color: var(--ink); }
+  #menu .set kbd, #menu .hint kbd { font: 11px "Segoe UI", system-ui, sans-serif; color: var(--dim); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; margin-left: 5px; }
+  #menu .hint { color: var(--dim); font-size: 12px; margin: 1px 0 5px; }
+  #menu select, #menu button { width: 100%; background: #0d1124; color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; font: inherit; }
+  #menu button { cursor: pointer; } #menu button:hover { border-color: #7f8bb0; }
+  #menu .rng { display: grid; grid-template-columns: 1fr 54px; gap: 6px; align-items: center; }
+  #menu .rng span { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; font-size: 12px; }
+  #menu input[type=range] { width: 100%; accent-color: #8fa0ff; margin: 0; }
+  #menu input[type=checkbox] { justify-self: end; width: 16px; height: 16px; accent-color: #8fa0ff; }
+  #menu .off { opacity: .4; pointer-events: none; }
+  #menu .foot { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  @media (max-width: 520px) { #menu { overflow-x: hidden; } #menu .set { grid-template-columns: 1fr; gap: 2px; margin: 6px 0; } #menu input[type=checkbox] { justify-self: start; } }
+  #title { left: 22px; top: 18px; }
+  #title h1 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: .5px; }
+  #title p { margin: 2px 0 0; color: var(--dim); font-size: 13px; }
+  #state { right: 22px; top: 20px; text-align: right; color: var(--dim); }
+  #state b { color: var(--ink); font-weight: 600; }
+  #layers { left: 22px; bottom: 44px; min-width: 300px; }
+  .row { display: grid; grid-template-columns: 118px 1fr 92px; gap: 8px; align-items: center; margin: 3px 0; }
+  .bar { height: 7px; background: rgba(255, 255, 255, .07); border-radius: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 4px; }
+  .row span:last-child { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
+  #total { margin-top: 7px; color: var(--dim); }
+  #total b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  #ctl { right: 22px; bottom: 44px; width: 250px; }
+  #ctl .axis { display: grid; grid-template-columns: 62px 1fr; gap: 8px; align-items: center; margin: 4px 0; }
+  .mid { position: relative; height: 8px; background: rgba(255, 255, 255, .07); border-radius: 4px; }
+  .mid i { position: absolute; top: 0; height: 100%; background: #ffb066; border-radius: 4px; }
+  .mid:after { content: ""; position: absolute; left: 50%; top: -2px; width: 1px; height: 12px; background: var(--line); }
+  .lamps { display: flex; gap: 6px; margin-top: 8px; }
+  .lamp { flex: 1; text-align: center; padding: 3px 0; border: 1px solid var(--line); border-radius: 5px; color: var(--dim); }
+  .lamp.on { background: #ff9a3d; border-color: #ffb066; color: #1a0d00; font-weight: 600; text-shadow: none; }
+  #legend { left: 22px; top: 92px; color: var(--dim); }
+  #legend div { margin: 2px 0; }
+  #legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: -1px; }
+  #credit { left: 0; right: 0; bottom: 14px; text-align: center; color: var(--dim); font-size: 12px; }
+  #keys { right: 22px; top: 64px; text-align: right; color: #56608a; font-size: 12px; }
+  #rec { color: #ff5c5c; font-weight: 600; display: none; }
+  @media (max-width: 1000px) {            /* a narrow window: the panels must not run into each other */
+    #keys, #legend { display: none; }
+    #title h1 { font-size: 20px; }
+    #layers { min-width: 0; width: 42%; }
+    .row { grid-template-columns: 1fr; gap: 2px; margin: 5px 0; }
+    .row span:last-child { display: none; }
+    #ctl { width: 40%; }
+    #credit { font-size: 10px; bottom: 6px; }
+    #layers, #ctl { bottom: 40px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud" id="title"><h1>Flyguy</h1><p>a fruit fly's wiring, playing Rocket League</p></div>
+<div class="hud" id="legend"></div>
+<div class="hud" id="state"><span id="rec">&#9679; recording &nbsp;</span><b id="live">connecting</b><br><span id="rate"></span><br><span id="bodystate"></span></div>
+<div class="hud" id="keys">drag: turn &nbsp; wheel: zoom &nbsp; <b style="color:#8791bd">O settings</b> &nbsp; H hide everything<br>F full screen &nbsp; V record video &nbsp; M layout &nbsp; T fly pinned / on the floor</div>
+<div class="hud" id="layers"></div>
+<div class="hud" id="ctl">
+  <div class="axis"><span>throttle</span><div class="mid"><i id="thr"></i></div></div>
+  <div class="axis"><span>steer</span><div class="mid"><i id="str"></i></div></div>
+  <div class="axis"><span>pitch</span><div class="mid"><i id="pit"></i></div></div>
+  <div class="axis"><span>roll</span><div class="mid"><i id="rol"></i></div></div>
+  <div class="lamps"><div class="lamp" id="jmp">jump</div><div class="lamp" id="bst">boost</div><div class="lamp" id="hbk">slide</div></div>
+</div>
+<div class="hud" id="credit"></div>
+<div id="gear" title="Settings (O)">&#9881;</div>
+<div id="menu"></div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const canvas = $("c");
+const gl = canvas.getContext("webgl2", { antialias: false, alpha: false, preserveDrawingBuffer: false });
+if (!gl) document.body.innerHTML = "<p style='padding:30px'>This page needs WebGL 2.</p>";
+// Options in the address (for recordings):  ?view=brain|both|stack|body  &size=640x1080 (the picture's exact size, whatever the
+// window's)  &clean=1 (no panels)  &autorec=1 (records every match by itself; the server keeps the files)  &labels=0|1
+// (title, match clock and credit drawn INTO the picture - on by default in the stacked view, the one made to sit beside a game video)
+const Q = new URLSearchParams(location.search);
+const FIXED = (() => { const s = (Q.get("size") || "").split("x").map(Number); return s.length === 2 && s[0] > 0 && s[1] > 0 ? s : null; })();
+// ---- settings: one list, kept in this browser (the menu: O or the wheel in the corner; most also have a key). What the
+// address says wins for this visit and is not kept. The fly body's own settings live in its server (flyguy/body/
+// body_server.py /set): null here = whatever that server runs with; a value the menu changed is sent again on every visit.
+const DEF = { view: "", rotate: true, edges: true, slow: false, exposure: 1.25,
+              panels: true, words: "auto", credit: true, bare: false, autorec: false,
+              interp: true, camWide: 2.2, camCalm: 2.5,
+              smooth: null, speed: null, tau: null, strength: null, wing: null, gain: null, soft: null };
+const BODY_KEYS = ["smooth", "speed", "tau", "strength", "wing", "gain", "soft"];
+const S = Object.assign({}, DEF), NOT_KEPT = new Set();
+try { const o = JSON.parse(localStorage.getItem("flyguy_viz") || "{}"); for (const k in DEF) if (k in o) S[k] = o[k]; } catch (e) {}
+function fromAddress(k, v) { S[k] = v; NOT_KEPT.add(k); }
+if (Q.get("view")) fromAddress("view", Q.get("view"));
+if (Q.get("clean") === "1") fromAddress("panels", false);
+if (Q.get("bare") === "1") fromAddress("bare", true);
+if (Q.get("labels")) fromAddress("words", Q.get("labels") === "1" ? "on" : "off");
+if (Q.get("autorec") === "1") fromAddress("autorec", true);
+if ((FIXED || Q.get("autorec") === "1") && Q.get("bare") !== "1") fromAddress("bare", false);      // (a recording page never starts hidden by an old choice)
+function keep() { try { const o = {}; for (const k in DEF) if (!NOT_KEPT.has(k)) o[k] = S[k]; localStorage.setItem("flyguy_viz", JSON.stringify(o)); } catch (e) {} }
+function fit() {
+  if (!FIXED) return;
+  const k = Math.min(innerWidth / FIXED[0], innerHeight / FIXED[1]), s = canvas.style;
+  s.width = FIXED[0] * k + "px"; s.height = FIXED[1] * k + "px"; s.left = (innerWidth - FIXED[0] * k) / 2 + "px"; s.top = (innerHeight - FIXED[1] * k) / 2 + "px";
+  s.right = "auto"; s.bottom = "auto";
+}
+addEventListener("resize", fit); fit();
+
+const VS_P = `#version 300 es
+in vec3 aPos; in vec3 aCol; in float aGlow; in float aFlag;
+uniform mat4 uMVP; uniform float uSize;
+out vec3 vCol; out float vGlow; out float vPlay;
+void main() {
+  vec4 p = uMVP * vec4(aPos, 1.0);
+  gl_Position = p;
+  vPlay = mod(aFlag, 2.0);
+  vGlow = aGlow; vCol = aCol;
+  gl_PointSize = uSize * (0.7 + 0.3 * vPlay + 2.8 * aGlow) / p.w;
+}`;
+const FS_P = `#version 300 es
+precision mediump float;
+in vec3 vCol; in float vGlow; in float vPlay;
+out vec4 o;
+void main() {
+  vec2 d = gl_PointCoord - 0.5;
+  float r2 = dot(d, d);
+  if (r2 > 0.25) discard;
+  float fall = exp(-r2 * 13.0);
+  vec3 rest = vCol * mix(0.010, 0.040, vPlay);
+  vec3 hot = mix(vCol, vec3(1.0), 0.45 * vGlow * vGlow) * (0.12 + 1.5 * vGlow) * vGlow;
+  o = vec4((rest + hot) * fall, 1.0);
+}`;
+const VS_L = `#version 300 es
+in vec3 aPos; in vec3 aCol; in float aI;
+uniform mat4 uMVP;
+out vec3 vCol;
+void main() { gl_Position = uMVP * vec4(aPos, 1.0); vCol = aCol * aI; }`;
+const FS_L = `#version 300 es
+precision mediump float;
+in vec3 vCol; out vec4 o;
+void main() { o = vec4(vCol, 1.0); }`;
+
+const VS_T = `#version 300 es
+out vec2 vUv;
+void main() { vUv = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(vUv * 2.0 - 1.0, 0.0, 1.0); }`;
+const FS_T = `#version 300 es
+precision highp float;
+in vec2 vUv; uniform sampler2D uTex; uniform float uExposure;
+out vec4 o;
+void main() {      // the light of many neurons adds up far past white: fold it back, with a soft halo from the coarser levels
+  vec3 c = textureLod(uTex, vUv, 0.0).rgb + 0.30 * textureLod(uTex, vUv, 2.5).rgb + 0.22 * textureLod(uTex, vUv, 4.5).rgb + 0.12 * textureLod(uTex, vUv, 6.5).rgb;
+  c = vec3(1.0) - exp(-c * uExposure);
+  o = vec4(pow(c, vec3(0.92)), 1.0);
+}`;
+// ---- the fly body (flyguy/body/body_server.py): every mesh of the flybody model, placed where the physics has it
+const VS_B = `#version 300 es
+in vec3 aPos; in vec3 aNor;
+uniform mat4 uVP; uniform vec3 uT; uniform mat3 uR;
+out vec3 vW; out vec3 vN; out vec3 vL;
+void main() {
+  vec3 w = uR * aPos + uT;
+  vW = w; vN = uR * aNor; vL = aPos;
+  gl_Position = uVP * vec4(w, 1.0);
+}`;
+const FS_B = `#version 300 es
+precision highp float;
+in vec3 vW; in vec3 vN; in vec3 vL;
+uniform vec4 uCol; uniform vec3 uEye; uniform int uKind;
+out vec4 o;
+void main() {
+  vec3 N = normalize(vN), V = normalize(uEye - vW);
+  if (!gl_FrontFacing) N = -N;
+  vec3 L1 = normalize(vec3(0.5, -0.6, 0.9)), L2 = normalize(vec3(-0.7, 0.5, 0.35));
+  float d1 = max(dot(N, L1), 0.0), d2 = max(dot(N, L2), 0.0), hemi = 0.5 + 0.5 * N.z;
+  vec3 base = uCol.rgb;
+  float gloss = 26.0, spec = 0.16;
+  if (uKind == 1) {                                     // compound eye: facets, and wet-looking
+    vec3 q = vL * 2600.0;
+    float f = sin(q.x) * sin(q.y + 0.5 * q.x) * sin(q.z);
+    base *= 0.72 + 0.4 * smoothstep(-0.2, 0.6, f); gloss = 70.0; spec = 0.6;
+  }
+  if (uKind == 3) { gloss = 12.0; spec = 0.05; }        // bristles and dark parts: matt
+  vec3 H = normalize(L1 + V);
+  float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+  vec3 c = base * (0.09 + 0.15 * hemi) + base * (0.95 * d1 * vec3(1.0, 0.94, 0.86) + 0.33 * d2 * vec3(0.55, 0.7, 1.0));
+  c += spec * pow(max(dot(N, H), 0.0), gloss) * vec3(1.0, 0.96, 0.9) + rim * vec3(0.08, 0.13, 0.26);
+  float a = 1.0;
+  if (uKind == 2) {                                     // wing membrane: thin, with a soap-film sheen
+    float t = 1.0 - max(dot(N, V), 0.0);
+    vec3 film = 0.5 + 0.5 * cos(6.2832 * (t * 1.6 + vec3(0.0, 0.33, 0.67)));
+    c = mix(vec3(0.42, 0.5, 0.6) * 0.4, film, 0.3) * (0.3 + 0.7 * d1 + 0.35 * rim) + 0.5 * pow(max(dot(N, H), 0.0), 90.0);
+    a = 0.26 + 0.5 * t;
+  }
+  o = vec4(c, a);
+}`;
+const VS_G = `#version 300 es
+uniform mat4 uVP; uniform vec3 uC; uniform float uS;
+out vec2 vP;
+const vec2 Q[6] = vec2[6](vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, -1), vec2(1, 1), vec2(-1, 1));
+void main() { vP = Q[gl_VertexID] * uS; gl_Position = uVP * vec4(uC.xy + vP, uC.z, 1.0); }`;
+const FS_G = `#version 300 es
+precision highp float;
+in vec2 vP; uniform float uS; uniform vec2 uFly; uniform vec2 uC2;
+out vec4 o;
+void main() {                                            // a lit patch of floor under the fly, its shadow, a faint grid
+  float r = length(vP) / uS;
+  float fade = exp(-r * r * 5.0);
+  vec2 w = uC2 + vP;
+  vec2 g = abs(fract(w / 0.05) - 0.5);
+  float grid = smoothstep(0.47, 0.5, max(g.x, g.y));
+  vec2 dsh = (w - uFly) / vec2(0.16, 0.16);
+  float sh = exp(-dot(dsh, dsh));
+  vec3 c = vec3(0.075, 0.085, 0.12) * (1.0 - 0.8 * sh) + grid * vec3(0.03, 0.04, 0.07);
+  o = vec4(c * fade, 1.0);
+}`;
+const FS_O = `#version 300 es
+precision mediump float;
+in vec2 vUv; uniform sampler2D uTex; out vec4 o;
+void main() { o = texture(uTex, vUv); }`;
+function program(vs, fs) {
+  const p = gl.createProgram();
+  for (const [type, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    gl.attachShader(p, s);
+  }
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+function attrib(prog, name, data, size, usage) {
+  const b = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, usage || gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, name);
+  if (loc >= 0) { gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0); }
+  return b;
+}
+
+// ---- camera
+const cam = { yaw: 0.5, pitch: 0.08, dist: 3.3, rotate: true };
+function mvp(w, h) {
+  const f = 1 / Math.tan(0.5 * 34 * Math.PI / 180), near = 0.1, far = 20;
+  const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+  // view = T(0, 0, -dist) * Rx(pitch) * Ry(yaw); column-major
+  const v = [cy, sp * sy, -cp * sy, 0, 0, cp, sp, 0, sy, -sp * cy, cp * cy, 0, 0, 0, -cam.dist, 1];
+  const p = [f / (w / h), 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) / (near - far), -1, 0, 0, 2 * far * near / (near - far), 0];
+  const m = new Float32Array(16);
+  for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+    let s = 0;
+    for (let k = 0; k < 4; k++) s += p[k * 4 + r] * v[c * 4 + k];
+    m[c * 4 + r] = s;
+  }
+  return m;
+}
+// the body's camera circles the fly (MuJoCo's world: z up)
+const bcam = { yaw: 2.2, pitch: 0.3, dist: 0.85 };
+function bodyVP(w, h, look, zoom) {
+  const f = 1 / Math.tan(0.5 * 30 * Math.PI / 180), near = 0.01, far = 30;
+  const dist = bcam.dist * Math.max(1, 1.3 / (w / h)) * (zoom || 1);   // a narrow picture: step back so the wings still fit; on the floor: wider (follow)
+  const cp = Math.cos(bcam.pitch), eye = [look[0] + dist * cp * Math.cos(bcam.yaw), look[1] + dist * cp * Math.sin(bcam.yaw), look[2] + dist * Math.sin(bcam.pitch)];
+  let z = [eye[0] - look[0], eye[1] - look[1], eye[2] - look[2]];
+  const zl = Math.hypot(...z); z = z.map(v => v / zl);
+  let x = [-z[1], z[0], 0];                                 // up (0, 0, 1) x z
+  const xl = Math.hypot(...x); x = x.map(v => v / xl);
+  const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const v = [x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x, eye), -dot(y, eye), -dot(z, eye), 1];
+  const p = [f / (w / h), 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) / (near - far), -1, 0, 0, 2 * far * near / (near - far), 0];
+  const m = new Float32Array(16);
+  for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+    let s = 0;
+    for (let k = 0; k < 4; k++) s += p[k * 4 + r] * v[c * 4 + k];
+    m[c * 4 + r] = s;
+  }
+  return [m, eye];
+}
+let drag = null, dragBody = false;
+function overBody(e) {
+  if (!body.ok) return false;
+  const r = canvas.getBoundingClientRect(), nx = (e.clientX - r.left) / r.width, ny = (e.clientY - r.top) / r.height;
+  return view === "body" || (view === "both" && nx > 0.5) || (view === "stack" && ny > 0.5);
+}
+function rects(w, h) {                                        // [x, y, width, height] from the bottom left; stack: brain above the fly
+  if (!body.ok || view === "brain") return { brain: [0, 0, w, h], fly: null };
+  if (view === "both") { const bw = Math.floor(w / 2); return { brain: [0, 0, bw, h], fly: [bw, 0, w - bw, h] }; }
+  if (view === "stack") { const fh = Math.floor(h / 2); return { brain: [0, fh, w, h - fh], fly: [0, 0, w, fh] }; }
+  return { brain: null, fly: [0, 0, w, h] };
+}
+canvas.addEventListener("pointerdown", e => { drag = [e.clientX, e.clientY]; dragBody = overBody(e); canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener("pointerup", () => { drag = null; });
+canvas.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const dx = (e.clientX - drag[0]) * 0.006, dy = (e.clientY - drag[1]) * 0.006;
+  if (dragBody) { bcam.yaw -= dx; bcam.pitch = Math.max(-0.2, Math.min(1.45, bcam.pitch + dy)); }
+  else { cam.yaw += dx; cam.pitch = Math.max(-1.4, Math.min(1.4, cam.pitch + dy)); }
+  drag = [e.clientX, e.clientY];
+});
+canvas.addEventListener("wheel", e => {
+  const k = Math.exp(e.deltaY * 0.001);
+  if (overBody(e)) bcam.dist = Math.max(0.25, Math.min(6, bcam.dist * k)); else cam.dist = Math.max(0.6, Math.min(9, cam.dist * k));
+  e.preventDefault();
+}, { passive: false });
+
+// ---- state
+let hdr = null, tProg = null, exposure = S.exposure, base;
+let view = "brain";                                         // "brain" | "both" | "body" (M); the body needs its server
+const body = { ok: false, geoms: [], counter: -1, pose: null, tethered: false, live: false, thorax: [0, 0, 0], look: null, cam: { look: null, vel: [0, 0, 0], goal: [0, 0], zoom: 1, zoomV: 0, was: undefined, settleUntil: 0 }, floorZ: 0, prog: null, floor: null,
+               url: new URLSearchParams(location.search).get("body") || (location.protocol + "//" + location.hostname + ":" + (parseInt(location.port || "80") + 1)) };
+async function initBody() {
+  try {
+    const r = await fetch(body.url + "/meshes");
+    if (!r.ok) return;
+    const buf = await r.arrayBuffer(), dv = new DataView(buf), n = dv.getUint32(8, true);
+    body.floorZ = dv.getFloat32(12, true);
+    let off = 16, total = 0;
+    const info = [];
+    for (let g = 0; g < n; g++) {
+      info.push({ nv: dv.getUint32(off, true), ni: dv.getUint32(off + 4, true), kind: dv.getUint32(off + 24, true),
+                  col: [dv.getFloat32(off + 8, true), dv.getFloat32(off + 12, true), dv.getFloat32(off + 16, true), dv.getFloat32(off + 20, true)] });
+      total += info[g].nv; off += 28;
+    }
+    let pOff = off, nOff = off + 12 * total, iOff = off + 24 * total;
+    body.prog = program(VS_B, FS_B); body.floor = program(VS_G, FS_G);
+    for (const g of info) {
+      const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+      attrib(body.prog, "aPos", new Float32Array(buf, pOff, g.nv * 3), 3); attrib(body.prog, "aNor", new Float32Array(buf, nOff, g.nv * 3), 3);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(buf, iOff, g.ni), gl.STATIC_DRAW);
+      body.geoms.push({ vao, ni: g.ni, col: g.col, kind: g.kind });
+      pOff += 12 * g.nv; nOff += 12 * g.nv; iOff += 4 * g.ni;
+    }
+    gl.bindVertexArray(null);
+    body.ok = true;
+    view = ["brain", "both", "stack", "body"].includes(S.view) ? S.view : "both";
+    pollBody();
+    bodySettings();
+  } catch (e) {                                             // the body's server is not up (yet): the brain alone, and another try
+    if (!body.ok && (body.tries = (body.tries || 0) + 1) < 40) setTimeout(initBody, 3000);
+  }
+}
+// The body's server sends 60 pictures a second with the moment each was taken on ITS clock; this page draws at its
+// own pace. Drawn straight, some pictures show twice and some never (and a recording stutters); so the page keeps the
+// last few and draws the body as it was a moment ago (HOLD), between the two pictures around that moment.
+const HOLD = 0.035, poses = [];
+const JUMP = [0.3, 12];                                        // a body length or more between two pictures, at over 12 a second (40 lengths): no movement, the fly was put there
+let clockOff = Infinity;                                       // this page's clock minus the server's, from the quickest arrivals
+async function pollBody() {
+  for (;;) {
+    try {
+      const r = await fetch(body.url + "/pose?after=" + body.counter);
+      if (r.status === 200) {
+        const buf = await r.arrayBuffer(), dv = new DataView(buf), fl = dv.getUint32(4, true), n = body.geoms.length;
+        body.counter = dv.getUint32(0, true); body.tethered = !!(fl & 1); body.live = !!(fl & 2);
+        const got = performance.now() / 1000, at = (fl & 4) ? dv.getFloat64(buf.byteLength - 8, true) : NaN;
+        const pic = { at, thorax: [dv.getFloat32(8, true), dv.getFloat32(12, true), dv.getFloat32(16, true)], geo: new Float32Array(buf.slice(20, 20 + n * 48)), tethered: body.tethered };
+        if (at === at) clockOff = Math.min(clockOff + 2e-4, got - at);
+        if (poses.length && (poses[poses.length - 1].tethered !== pic.tethered || !(at > poses[poses.length - 1].at))) poses.length = 0;   // pinned <-> floor, or a server started again
+        if (poses.length) {                                      // put back at its start (the menu's reset): no picture in between,
+          const was = poses[poses.length - 1], far = Math.hypot(...pic.thorax.map((v, i) => v - was.thorax[i]));     // and the camera goes with it at once
+          if (far > JUMP[0] && far > JUMP[1] * Math.max(at - was.at || 0, 1 / 120)) { poses.length = 0; body.cam.look = null; }
+        }
+        poses.push(pic); while (poses.length > 6) poses.shift();
+        body.thorax = pic.thorax; body.pose = pic.geo;
+      } else if (r.status !== 204) await new Promise(ok => setTimeout(ok, 500));
+    } catch (e) { await new Promise(ok => setTimeout(ok, 1000)); }
+  }
+}
+function m2q(a, o, q) {                                        // a 3x3 rotation (rows, as MuJoCo gives it) -> quaternion [w, x, y, z]
+  const m00 = a[o], m01 = a[o + 1], m02 = a[o + 2], m10 = a[o + 3], m11 = a[o + 4], m12 = a[o + 5], m20 = a[o + 6], m21 = a[o + 7], m22 = a[o + 8], tr = m00 + m11 + m22;
+  if (tr > 0) { const s = 2 * Math.sqrt(tr + 1); q[0] = s / 4; q[1] = (m21 - m12) / s; q[2] = (m02 - m20) / s; q[3] = (m10 - m01) / s; }
+  else if (m00 > m11 && m00 > m22) { const s = 2 * Math.sqrt(1 + m00 - m11 - m22); q[0] = (m21 - m12) / s; q[1] = s / 4; q[2] = (m01 + m10) / s; q[3] = (m02 + m20) / s; }
+  else if (m11 > m22) { const s = 2 * Math.sqrt(1 + m11 - m00 - m22); q[0] = (m02 - m20) / s; q[1] = (m01 + m10) / s; q[2] = s / 4; q[3] = (m12 + m21) / s; }
+  else { const s = 2 * Math.sqrt(1 + m22 - m00 - m11); q[0] = (m10 - m01) / s; q[1] = (m02 + m20) / s; q[2] = (m12 + m21) / s; q[3] = s / 4; }
+}
+const qa = new Float64Array(4), qb = new Float64Array(4);
+let poseOut = null;
+function poseNow() {                                           // the body as it was HOLD ago, between the pictures around that moment
+  const n = poses.length;
+  if (!n) return false;
+  const last = poses[n - 1];
+  if (!S.interp || n < 2 || !(clockOff < Infinity)) { body.thorax = last.thorax; body.pose = last.geo; return true; }
+  const want = performance.now() / 1000 - clockOff - HOLD;
+  let i = n - 2;
+  while (i > 0 && poses[i].at > want) i--;
+  const A = poses[i], B = poses[i + 1], f = Math.max(0, Math.min(1, (want - A.at) / Math.max(1e-6, B.at - A.at)));
+  if (f >= 1) { body.thorax = B.thorax; body.pose = B.geo; return true; }
+  if (!poseOut || poseOut.length !== A.geo.length) poseOut = new Float32Array(A.geo.length);
+  const a = A.geo, b = B.geo, o = poseOut;
+  for (let g = 0; g < a.length; g += 12) {
+    for (let k = 0; k < 3; k++) o[g + k] = a[g + k] + f * (b[g + k] - a[g + k]);
+    m2q(a, g + 3, qa); m2q(b, g + 3, qb);
+    const s = qa[0] * qb[0] + qa[1] * qb[1] + qa[2] * qb[2] + qa[3] * qb[3] < 0 ? -1 : 1;
+    let w = qa[0] + f * (s * qb[0] - qa[0]), x = qa[1] + f * (s * qb[1] - qa[1]), y = qa[2] + f * (s * qb[2] - qa[2]), z = qa[3] + f * (s * qb[3] - qa[3]);
+    const l = 1 / Math.hypot(w, x, y, z); w *= l; x *= l; y *= l; z *= l;
+    o[g + 3] = 1 - 2 * (y * y + z * z); o[g + 4] = 2 * (x * y - w * z); o[g + 5] = 2 * (x * z + w * y);
+    o[g + 6] = 2 * (x * y + w * z); o[g + 7] = 1 - 2 * (x * x + z * z); o[g + 8] = 2 * (y * z - w * x);
+    o[g + 9] = 2 * (x * z - w * y); o[g + 10] = 2 * (y * z + w * x); o[g + 11] = 1 - 2 * (x * x + y * y);
+  }
+  body.thorax = [0, 1, 2].map(k => A.thorax[k] + f * (B.thorax[k] - A.thorax[k]));
+  body.pose = o;
+  return true;
+}
+// The body's own settings: read from its server, and what this browser's menu changed is sent to it again.
+const bodyCfg = { now: null, limits: null, pace: null };
+function paceNote() {                                          // the body's clock when it is not the wall clock's
+  const p = bodyCfg.pace, s = bodyCfg.now ? bodyCfg.now.speed : 1;
+  if (!(p > 0)) return "";
+  if (p < 0.9 * s) return " - " + p.toFixed(2) + " of real time (this PC is busy)";
+  return s < 0.99 ? " - " + (s === 0.5 ? "half" : s === 0.25 ? "quarter" : s.toFixed(2) + " of") + " speed" : "";
+}
+setInterval(async () => {
+  if (!body.ok) return;
+  try { const j = await (await fetch(body.url + "/status")).json(); if (j.settings) { bodyCfg.now = j.settings; bodyCfg.pace = j.pace; } } catch (e) {}
+}, 2000);
+async function bodySettings(change) {
+  try {
+    const q = change ? "/set?" + Object.entries(change).map(([k, v]) => k + "=" + v).join("&") : "/status";
+    const j = await (await fetch(body.url + q)).json();
+    if (j.settings) { bodyCfg.now = j.settings; bodyCfg.limits = j.limits; bodyCfg.defaults = j.defaults; }
+    if (!change) {
+      const mine = {};
+      for (const k of BODY_KEYS) if (S[k] !== null && bodyCfg.now && k in bodyCfg.now && Math.abs(bodyCfg.now[k] - S[k]) > 1e-9) mine[k] = S[k];
+      if (Object.keys(mine).length) return bodySettings(mine);
+    }
+    refreshMenu();
+  } catch (e) {}
+}
+// Where the body's camera looks and how far back it stands. Pinned: at the thorax. On the floor (10-10: a stable
+// camera, enough margin that the fly cannot roll out of view, and a lot of smoothing) the fly throws itself about - a
+// body length in a tenth of a second, a few lengths in a minute - and a camera that answers that shakes. So:
+//   - the picture is wider (FOLLOW.wide);
+//   - the target does not move while the fly is inside a circle around it (FOLLOW.dead) and is dragged by the circle's
+//     edge when the fly leaves it; the camera follows the target as a heavy, critically damped spring (FOLLOW.time);
+//   - what keeps the fly in the picture is measured IN the picture: where the thorax is drawn (0 the middle, 1 the
+//     edge). Beyond FOLLOW.edge the camera steps back at once (FOLLOW.attack) and the spring stiffens; it comes
+//     forward again slowly (FOLLOW.release).
+// Chosen on two recordings of the loose fly (50 s and 80 s, a 640x540 picture): against the camera this replaces
+// (straight at the thorax, 0.2 s behind) the look point's acceleration is 0.07 and 0.03 instead of 6 (rms), the
+// distance changes by at most 0.6 and 0.2 a second (log), and the thorax is never drawn beyond 0.75 of the way to the
+// edge (the old one: 0.9, at 2.2 times the size).
+const FOLLOW = { wide: 2.2, dead: 0.16, time: 2.5, zTime: 3.0, edge: 0.55, attack: 0.4, release: 3.0, far: 4.0, settle: 1.5 };
+function damp(cur, vel, target, time, dt) {                  // critically damped spring: [value, speed] after dt
+  const w = 2 / time, x = w * dt, e = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  const d = cur - target, t = (vel + w * d) * dt;
+  return [target + (d + t) * e, (vel - w * t) * e];
+}
+function inPicture(vp, P) {                                  // where a point is drawn: [-1, 1] across and up the picture
+  const cw = vp[3] * P[0] + vp[7] * P[1] + vp[11] * P[2] + vp[15];
+  return [(vp[0] * P[0] + vp[4] * P[1] + vp[8] * P[2] + vp[12]) / cw, (vp[1] * P[0] + vp[5] * P[1] + vp[9] * P[2] + vp[13]) / cw];
+}
+function follow(s, T, tethered, dt, now, w, h, F) {          // s: { look, vel, goal, zoom, zoomV, was, settleUntil }
+  F = F || FOLLOW;
+  if (!s.look || s.was !== tethered) {                        // the first picture, or pinned <-> floor: the body starts again
+    if (!s.look) { s.look = T.slice(); s.zoom = tethered ? 1 : F.wide; }
+    s.goal = [T[0], T[1]]; s.vel = [0, 0, 0]; s.zoomV = 0;
+    s.settleUntil = s.was === undefined ? 0 : now + F.settle;
+    s.was = tethered;
+  }
+  dt = Math.min(dt, 0.1);
+  if (tethered) {
+    for (let i = 0; i < 3; i++) s.look[i] += (T[i] - s.look[i]) * Math.min(1, dt * 5);
+    [s.zoom, s.zoomV] = damp(s.zoom, s.zoomV, 1, 0.6, dt);
+    return;
+  }
+  const n = inPicture(bodyVP(w, h, s.look, s.zoom)[0], T), m = Math.max(Math.abs(n[0]), Math.abs(n[1]));
+  const over = Math.max(0, m / F.edge - 1);
+  const gx = T[0] - s.goal[0], gy = T[1] - s.goal[1], g = Math.hypot(gx, gy);
+  if (g > F.dead) { const k = (g - F.dead) / g; s.goal[0] += gx * k; s.goal[1] += gy * k; }
+  const settling = now < s.settleUntil;                      // just dropped onto the floor: get there, then be calm
+  const stiff = 1 + 4 * over;
+  for (let i = 0; i < 2; i++) [s.look[i], s.vel[i]] = damp(s.look[i], s.vel[i], s.goal[i], settling ? 0.4 : F.time / stiff, dt);
+  [s.look[2], s.vel[2]] = damp(s.look[2], s.vel[2], T[2], settling ? 0.4 : F.zTime / stiff, dt);
+  const want = Math.min(F.far, Math.max(F.wide, s.zoom * m / F.edge));    // (the distance at which the fly would be drawn at the edge mark)
+  [s.zoom, s.zoomV] = damp(s.zoom, s.zoomV, want, want > s.zoom ? F.attack : F.release, dt);
+}
+function drawBody(x, y, vw, vh, dt) {
+  if (!poseNow()) return;
+  FOLLOW.wide = S.camWide; FOLLOW.time = S.camCalm;
+  follow(body.cam, body.thorax, body.tethered, dt, performance.now() / 1000, vw, vh);
+  body.look = body.cam.look;
+  if (cam.rotate && !(drag && dragBody)) bcam.yaw += dt * 0.12;
+  const [vp, eye] = bodyVP(vw, vh, body.look, body.cam.zoom);
+  gl.viewport(x, y, vw, vh);
+  gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.BLEND);
+  if (!body.tethered) {
+    gl.useProgram(body.floor); gl.bindVertexArray(null);
+    gl.uniformMatrix4fv(gl.getUniformLocation(body.floor, "uVP"), false, vp);
+    gl.uniform3f(gl.getUniformLocation(body.floor, "uC"), body.look[0], body.look[1], body.floorZ);
+    gl.uniform2f(gl.getUniformLocation(body.floor, "uC2"), body.look[0], body.look[1]);
+    gl.uniform2f(gl.getUniformLocation(body.floor, "uFly"), body.thorax[0], body.thorax[1]);
+    gl.uniform1f(gl.getUniformLocation(body.floor, "uS"), 1.6);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+  const P = body.prog, pose = body.pose;
+  gl.useProgram(P);
+  gl.uniformMatrix4fv(gl.getUniformLocation(P, "uVP"), false, vp);
+  gl.uniform3f(gl.getUniformLocation(P, "uEye"), eye[0], eye[1], eye[2]);
+  const uT = gl.getUniformLocation(P, "uT"), uR = gl.getUniformLocation(P, "uR"), uCol = gl.getUniformLocation(P, "uCol"), uKind = gl.getUniformLocation(P, "uKind");
+  for (let pass = 0; pass < 2; pass++) {                    // the wings last: they are see-through
+    if (pass) { gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); }
+    for (let g = 0; g < body.geoms.length; g++) {
+      const G = body.geoms[g];
+      if ((G.kind === 2) !== (pass === 1)) continue;
+      gl.bindVertexArray(G.vao);
+      gl.uniform3f(uT, pose[12 * g], pose[12 * g + 1], pose[12 * g + 2]);
+      gl.uniformMatrix3fv(uR, true, pose.subarray(12 * g + 3, 12 * g + 12));
+      gl.uniform4f(uCol, G.col[0], G.col[1], G.col[2], G.col[3]); gl.uniform1i(uKind, G.kind);
+      gl.drawElements(gl.TRIANGLES, G.ni, gl.UNSIGNED_INT, 0);
+    }
+  }
+  gl.depthMask(true); gl.disable(gl.DEPTH_TEST); gl.bindVertexArray(null);
+}
+let N = 0, layers = [], glow, flag, lineI, ePre, ePost, eW, meta, pProg, lProg, pVao, lVao, glowBuf, lineBuf, nEdges = 0;
+let showEdges = true, slow = false, pending = [], lastTick = -1, lastFrameAt = 0, ticks = [], counts = [0, 0, 0, 0];
+const LAYER_NAMES = ["sensory", "one synapse in", "two synapses in", "descending"];
+const LAYER_COLORS = ["#40e6ff", "#a48cff", "#e080ff", "#ff7326"];
+
+async function init() {
+  meta = await (await fetch("meta.json")).json();
+  const buf = await (await fetch("layout.bin")).arrayBuffer();
+  const dv = new DataView(buf);
+  N = dv.getUint32(8, true);
+  const L = dv.getUint32(12, true), sizes = [];
+  for (let k = 0; k < L; k++) sizes.push(dv.getUint32(16 + 4 * k, true));
+  nEdges = dv.getUint32(32, true);
+  let off = 36;
+  const pos = new Float32Array(buf, off, N * 3); off += N * 12;
+  const cls = new Uint8Array(buf, off, N); flag = new Uint8Array(buf, off + N, N);
+  off += 2 * N + ((4 - (2 * N) % 4) % 4);
+  for (let k = 0; k < L; k++) { layers.push(new Uint32Array(buf, off, sizes[k])); off += 4 * sizes[k]; }
+  ePre = new Uint32Array(buf, off, nEdges); off += 4 * nEdges;
+  ePost = new Uint32Array(buf, off, nEdges); off += 4 * nEdges;
+  eW = new Float32Array(buf, off, nEdges);
+
+  const col = new Float32Array(N * 3), fl = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const c = meta.classes[cls[i]].color;
+    col[3 * i] = c[0]; col[3 * i + 1] = c[1]; col[3 * i + 2] = c[2];
+    fl[i] = flag[i];
+  }
+  glow = new Float32Array(N); base = new Float32Array(N);
+  if (gl.getExtension("EXT_color_buffer_float")) {
+    tProg = program(VS_T, FS_T);
+    hdr = { fbo: gl.createFramebuffer(), tex: gl.createTexture(), w: 0, h: 0, ms: gl.createFramebuffer(), msColor: gl.createRenderbuffer(), msDepth: gl.createRenderbuffer(),
+            samples: Math.min(4, gl.getParameter(gl.MAX_SAMPLES)) };
+  }
+  pProg = program(VS_P, FS_P);
+  pVao = gl.createVertexArray(); gl.bindVertexArray(pVao);
+  attrib(pProg, "aPos", pos, 3); attrib(pProg, "aCol", col, 3); attrib(pProg, "aFlag", fl, 1);
+  glowBuf = attrib(pProg, "aGlow", glow, 1, gl.DYNAMIC_DRAW);
+
+  const lp = new Float32Array(nEdges * 6), lc = new Float32Array(nEdges * 6);
+  for (let e = 0; e < nEdges; e++) {
+    const a = ePre[e], b = ePost[e];
+    for (let d = 0; d < 3; d++) { lp[6 * e + d] = pos[3 * a + d]; lp[6 * e + 3 + d] = pos[3 * b + d]; lc[6 * e + d] = col[3 * a + d]; lc[6 * e + 3 + d] = col[3 * a + d]; }
+  }
+  lineI = new Float32Array(nEdges * 2);
+  lProg = program(VS_L, FS_L);
+  lVao = gl.createVertexArray(); gl.bindVertexArray(lVao);
+  attrib(lProg, "aPos", lp, 3); attrib(lProg, "aCol", lc, 3);
+  lineBuf = attrib(lProg, "aI", lineI, 1, gl.DYNAMIC_DRAW);
+  gl.bindVertexArray(null);
+
+  $("credit").textContent = `${meta.credit}  ·  ${meta.n.toLocaleString()} neurons, ${meta.connections.toLocaleString()} connections in the map  ·  ${meta.in_play.toLocaleString()} neurons and ${meta.connections_in_play.toLocaleString()} connections decide`;
+  const big = meta.classes.filter(c => c.in_play > 3000 || /descending|ascending/.test(c.name)).slice(0, 9);
+  $("legend").innerHTML = big.map(c => `<div><i style="background:rgb(${c.color.map(v => Math.round(255 * v)).join(",")})"></i>${c.name.replace(/_/g, " ").replace(/^ol /, "optic lobe ").replace(/^cb /, "central brain ").replace(/^vnc /, "nerve cord ")}</div>`).join("");
+  $("layers").innerHTML = LAYER_NAMES.slice(0, L).map((n, k) => `<div class="row"><span>${n}</span><div class="bar"><i id="lb${k}" style="background:${LAYER_COLORS[k]}"></i></div><span id="lc${k}"></span></div>`).join("") + `<div id="total"></div>`;
+  poll();
+  initBody();
+  requestAnimationFrame(draw);
+}
+
+// ---- frames from the server
+async function poll() {
+  for (;;) {
+    try {
+      const r = await fetch("frame?after=" + lastTick);
+      if (r.status === 200) onFrame(await r.arrayBuffer());
+      else if (r.status !== 204) await new Promise(ok => setTimeout(ok, 500));
+    } catch (e) { await new Promise(ok => setTimeout(ok, 1000)); }
+  }
+}
+function onFrame(buf) {
+  const dv = new DataView(buf), now = performance.now();
+  lastTick = dv.getUint32(12, true);
+  if (Date.now() / 1000 - dv.getFloat64(16, true) > 3) return;      // the last decision of a game that is over: not shown
+  lastFrameAt = now;
+  matchClock = dv.getFloat32(440, true); gameFrame = dv.getUint32(444, true); overtime = dv.getInt32(448, true) !== 0;
+  ticks.push(now); while (ticks.length > 30) ticks.shift();
+  const ctl = new Float32Array(buf.slice(28, 60));
+  const stagger = slow ? 180 : 14;                       // the signal crosses one synapse per step of the wave
+  let off = 512;
+  for (let k = 0; k < layers.length; k++) {
+    const n = dv.getUint32(64 + 4 * k, true);
+    if (n !== layers[k].length) { $("live").textContent = "this bot's network does not match the layout"; return; }
+    pending.push({ at: now + k * stagger, layer: k, bytes: new Uint8Array(buf, off, n) });
+    off += n;
+  }
+  pending.push({ at: now + layers.length * stagger, ctl });
+}
+function setMid(id, v) { const el = $(id), w = Math.min(1, Math.abs(v)) * 50; el.style.width = w + "%"; el.style.left = (v < 0 ? 50 - w : 50) + "%"; }
+
+// ---- drawing
+let lastT = 0, rec = null, wasIdle = false, restFrame = 0, matchClock = -1, gameFrame = 0, overtime = false;
+// ---- words drawn into the picture itself (a recording of the page only has the picture, not the panels)
+const lab = { cv: document.createElement("canvas"), tex: null, prog: null, key: "" };
+function clockText() {
+  if (!(matchClock >= 0) || !gameFrame) return "";          // (a bot started before 10-09 23:40 sends no clock)
+  const s = Math.ceil(matchClock - 1e-3);
+  return (overtime ? "+" : "") + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+}
+function drawLabels(w, h, R, idle) {
+  const on = !S.bare && (S.words === "on" || (S.words === "auto" && view === "stack"));
+  document.body.classList.toggle("burned", on);
+  if (!on) return;
+  const total = counts.reduce((a, b) => a + b, 0);
+  const key = [w, h, view, clockText(), gameFrame, idle ? 0 : total, body.tethered, idle, S.credit].join("|");
+  if (!lab.prog) { lab.prog = program(VS_T, FS_O); lab.tex = gl.createTexture(); }
+  if (key !== lab.key) {
+    lab.key = key;
+    const cv = lab.cv, c = cv.getContext("2d"), u = h / 1080;
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    c.clearRect(0, 0, w, h);
+    c.shadowColor = "rgba(0,0,0,.9)"; c.shadowBlur = 6 * u; c.textBaseline = "top";
+    const text = (s, x, y, px, col, weight, align) => { c.font = `${weight || 400} ${px * u}px "Segoe UI", system-ui, sans-serif`; c.fillStyle = col; c.textAlign = align || "left"; c.fillText(s, x, y); };
+    const top = r => h - r[1] - r[3];                          // a part's upper edge, counted from the top of the picture
+    if (R.brain) {
+      const x = R.brain[0] + 18 * u, y = top(R.brain) + 14 * u;
+      text("FLYGUY", x, y, 30, "#e6ecff", 700);
+      text("a fruit fly's wiring, playing Rocket League", x, y + 38 * u, 15, "#9aa6cc");
+      text(idle ? "brain: at rest" : "brain: " + total.toLocaleString() + " neurons firing", x, top(R.brain) + R.brain[3] - 30 * u, 15, "#9aa6cc");
+      const cx = R.brain[0] + R.brain[2] - 18 * u;
+      if (clockText()) { text(clockText(), cx, y, 34, "#ffffff", 700, "right"); text("game frame " + gameFrame, cx, y + 42 * u, 12, "#7c88ad", 400, "right"); }
+    }
+    if (R.fly) {
+      const x = R.fly[0] + 18 * u, y = top(R.fly);
+      text("body: its motor neurons on a simulated fly" + (body.tethered ? " (pinned)" : " (on the floor)"), x, y + R.fly[3] - 52 * u, 15, "#9aa6cc");
+      if (!R.brain && clockText()) text(clockText(), R.fly[0] + R.fly[2] - 18 * u, y + 14 * u, 34, "#ffffff", 700, "right");
+    }
+    if (S.credit) text("Wiring: Janelia FlyEM male CNS v1.0 (CC-BY)  ·  body: flybody (DeepMind + Janelia)", w / 2, h - 24 * u, 11.5, "#6f7aa0", 400, "center");
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, lab.tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.bindVertexArray(null);
+  gl.useProgram(lab.prog); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, lab.tex);
+  gl.uniform1i(gl.getUniformLocation(lab.prog, "uTex"), 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.disable(gl.BLEND);
+}
+// ---- recording the picture: V by hand, or by itself for every match (?autorec=1). The server keeps the file
+// (runs/flyguy_viz/) with the moment it began, the game frame and the match clock - what lines it up with a game video.
+function startRec() {
+  if (rec) return;
+  const type = MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm";
+  const r = { chunks: [], startMs: Date.now(), frame0: gameFrame, clock0: matchClock, w: canvas.width, h: canvas.height, view };
+  r.mr = new MediaRecorder(canvas.captureStream(60), { mimeType: type, videoBitsPerSecond: 12e6 });
+  r.mr.ondataavailable = ev => r.chunks.push(ev.data);
+  r.mr.onstop = () => saveRec(r);
+  r.mr.start(1000);
+  rec = r; $("rec").style.display = "inline";
+}
+function stopRec() { if (!rec) return; const r = rec; rec = null; $("rec").style.display = "none"; r.mr.stop(); }
+async function saveRec(r) {
+  const blob = new Blob(r.chunks, { type: "video/webm" }), d = new Date(r.startMs), z = (v, n) => String(v).padStart(n || 2, "0");
+  const name = `flyguy_viz_${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}_${z(d.getHours())}-${z(d.getMinutes())}-${z(d.getSeconds())}-${z(d.getMilliseconds(), 3)}`;
+  try {
+    const resp = await fetch(`save?name=${name}&start_ms=${r.startMs}&frame0=${r.frame0}&clock0=${r.clock0}&w=${r.w}&h=${r.h}&view=${r.view}`, { method: "POST", body: blob });
+    if (!resp.ok) throw new Error("save " + resp.status);
+    $("bodystate").textContent = "saved " + name;
+  } catch (e) {                                              // no server to keep it: hand it to the browser
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name + ".webm"; a.click();
+  }
+}
+function draw(t) {
+  const dt = Math.min(0.1, (t - lastT) / 1000); lastT = t;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), w = FIXED ? FIXED[0] : Math.round(innerWidth * dpr), h = FIXED ? FIXED[1] : Math.round(innerHeight * dpr);
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  if (cam.rotate && !drag) cam.yaw += dt * 0.07;
+  const decay = Math.exp(-dt / (slow ? 0.5 : 0.11));
+  for (let i = 0; i < N; i++) glow[i] *= decay;
+  const now = performance.now();
+  const idle = now - lastFrameAt > 1500;
+  if (idle && !wasIdle) {                                // no decisions arriving: the map at rest and an empty panel - nothing
+    pending.length = 0; ticks.length = 0;                // on screen that the fly network did not produce
+    for (let k = 0; k < layers.length; k++) { const el = $("lb" + k); if (el) { el.style.width = "0"; $("lc" + k).textContent = ""; } }
+    for (const id of ["thr", "str", "pit", "rol"]) setMid(id, 0);
+    for (const id of ["jmp", "bst", "hbk"]) $(id).classList.remove("on");
+    if ($("total")) $("total").textContent = "";
+  }
+  wasIdle = idle;
+  if (S.autorec) { if (!rec && !idle) startRec(); else if (rec && now - lastFrameAt > 25000) stopRec(); }      // one file a match: the pauses inside it stay in
+  if (idle && view === "brain" && !drag && !rec && (restFrame++ % 6)) { requestAnimationFrame(draw); return; }   // at rest: ten pictures a second are enough (the GPU beside it trains)
+  for (let i = 0; i < pending.length;) {
+    const p = pending[i];
+    if (p.at > now) { i++; continue; }
+    if (p.bytes) {
+      const l = layers[p.layer], b = p.bytes; let c = 0;
+      for (let r = 0; r < b.length; r++) {         // a neuron shows by how far it is above its own usual level, and a little for firing at all
+        const g = b[r] / 255, pt = l[r], u = base[pt];
+        base[pt] = u + (g - u) * 0.05;
+        if (g > 0) { c++; const s = Math.min(1, 0.16 * g + 2.2 * Math.max(0, g - u)); if (s > glow[pt]) glow[pt] = s; }
+      }
+      counts[p.layer] = c;
+      const el = $("lb" + p.layer);
+      if (el) { el.style.width = (100 * c / b.length).toFixed(1) + "%"; $("lc" + p.layer).textContent = c.toLocaleString() + " / " + b.length.toLocaleString(); }
+    } else if (p.ctl) {
+      const c = p.ctl;
+      setMid("thr", c[0]); setMid("str", c[1]); setMid("pit", c[2]); setMid("rol", c[4]);
+      $("jmp").classList.toggle("on", c[5] > 0.5); $("bst").classList.toggle("on", c[6] > 0.5); $("hbk").classList.toggle("on", c[7] > 0.5);
+      $("total").innerHTML = `<b>${counts.reduce((a, b) => a + b, 0).toLocaleString()}</b> neuron firings in this decision`;
+    }
+    pending.splice(i, 1);
+  }
+  $("live").textContent = idle ? "at rest - Flyguy is not deciding" : "live";
+  $("rate").textContent = idle || ticks.length < 2 ? "" : (1000 * (ticks.length - 1) / (ticks[ticks.length - 1] - ticks[0])).toFixed(1) + " decisions a second";
+
+  if (hdr) {
+    if (hdr.w !== w || hdr.h !== h) {
+      gl.bindTexture(gl.TEXTURE_2D, hdr.tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, hdr.fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, hdr.tex, 0);
+      gl.bindRenderbuffer(gl.RENDERBUFFER, hdr.msColor); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, hdr.samples, gl.RGBA16F, w, h);
+      gl.bindRenderbuffer(gl.RENDERBUFFER, hdr.msDepth); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, hdr.samples, gl.DEPTH_COMPONENT24, w, h);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, hdr.ms);          // everything is drawn here (smooth edges for the fly's thin legs), then copied to the texture
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, hdr.msColor);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, hdr.msDepth);
+      hdr.w = w; hdr.h = h;
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, hdr.ms);
+  }
+  const R = rects(w, h), B = R.brain || [0, 0, 1, 1], bw = R.brain ? 1 : 0;      // which part of the picture is the brain's, which the fly's
+  if (!$("bodystate").textContent.startsWith("saved")) $("bodystate").textContent = !R.fly ? "" : (body.tethered ? "fly body: pinned" : "fly body: on the floor") + paceNote();
+  gl.viewport(0, 0, w, h);
+  gl.clearColor(0.004, 0.005, 0.014, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  if (R.fly) drawBody(R.fly[0], R.fly[1], R.fly[2], R.fly[3], dt);
+  gl.viewport(B[0], B[1], B[2], B[3]);
+  gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+  const m = mvp(B[2], B[3]);
+  if (bw > 0 && showEdges && nEdges) {
+    for (let e = 0; e < nEdges; e++) { const g = glow[ePre[e]] * (0.25 + 0.75 * eW[e]); lineI[2 * e] = g * 0.16; lineI[2 * e + 1] = g * 0.03 + glow[ePost[e]] * 0.03; }
+    gl.useProgram(lProg); gl.bindVertexArray(lVao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, lineI);
+    gl.uniformMatrix4fv(gl.getUniformLocation(lProg, "uMVP"), false, m);
+    gl.drawArrays(gl.LINES, 0, nEdges * 2);
+  }
+  gl.useProgram(pProg); gl.bindVertexArray(pVao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, glowBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, glow);
+  gl.uniformMatrix4fv(gl.getUniformLocation(pProg, "uMVP"), false, m);
+  gl.uniform1f(gl.getUniformLocation(pProg, "uSize"), 5.2 * B[3] / 1080 * (view === "stack" ? 1.1 : 1));
+  if (bw > 0) gl.drawArrays(gl.POINTS, 0, N);
+  gl.viewport(0, 0, w, h);
+  if (hdr) {
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, hdr.ms); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, hdr.fbo);
+    gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.disable(gl.BLEND);
+    gl.bindVertexArray(null);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, hdr.tex); gl.generateMipmap(gl.TEXTURE_2D);
+    gl.useProgram(tProg);
+    gl.uniform1i(gl.getUniformLocation(tProg, "uTex"), 0); gl.uniform1f(gl.getUniformLocation(tProg, "uExposure"), exposure);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  drawLabels(w, h, R, idle);
+  requestAnimationFrame(draw);
+}
+
+// ---- the settings menu
+const MENU = [
+  ["Picture"],
+  { k: "view", label: "Layout", key: "M", opts: [["brain", "brain only"], ["both", "brain and fly, side by side"], ["stack", "brain above fly (for videos)"], ["body", "fly only"]], needsBody: true },
+  { k: "rotate", label: "Camera turns by itself", key: "R" },
+  { k: "edges", label: "Connections", key: "E" },
+  { k: "slow", label: "Slow wave through layers", key: "S" },
+  { k: "exposure", label: "Brightness", key: "\u2191 \u2193", min: 0.4, max: 4, step: 0.05, fmt: v => v.toFixed(2) },
+  ["Fly body"],
+  { k: "mode", label: "The fly is", key: "T", opts: [["tethered", "pinned in the air"], ["free", "loose on the floor"]], needsBody: true },
+  { button: "Reset the fly", act: resetFly, label: "Back to where it started", key: "X", needsBody: true },
+  { k: "smooth", body: true, label: "Smoothing of its movement", min: 0, max: 0.3, step: 0.005, fmt: v => v ? Math.round(v * 1000) + " ms" : "off" },
+  { k: "interp", label: "Even pictures in between", needsBody: true },
+  { k: "speed", body: true, label: "Speed of the body's clock", opts: [[1, "real time"], [0.5, "half speed"], [0.25, "quarter speed"], [0.1, "a tenth"]] },
+  { hint: "A fly moves faster than the eye follows: slower shows what it does. The brain stays in real time.", id: "mpace" },
+  { k: "tau", body: true, label: "Muscles answer within", min: 0.01, max: 0.4, step: 0.005, fmt: v => Math.round(v * 1000) + " ms" },
+  { k: "strength", body: true, label: "Strongest push of a joint", min: 0, max: 1, step: 0.01, fmt: v => v ? v.toFixed(2) : "no limit" },
+  { k: "wing", body: true, label: "Strength of the wings", min: 0, max: 1, step: 0.01, fmt: v => v.toFixed(2) },
+  { k: "gain", body: true, label: "How hard firing drives a joint", min: 0.5, max: 12, step: 0.1, fmt: v => v.toFixed(1) },
+  { k: "soft", body: true, label: "Commands level off gently", check: true },
+  ["Camera on the loose fly"],
+  { k: "camWide", label: "Distance", min: 1.2, max: 4, step: 0.1, fmt: v => v.toFixed(1) + "x", needsBody: true },
+  { k: "camCalm", label: "Calmness (time to catch up)", min: 0.3, max: 6, step: 0.1, fmt: v => v.toFixed(1) + " s", needsBody: true },
+  ["Words on screen"],
+  { k: "panels", label: "Panels and legend" },
+  { k: "words", label: "Title and clock in the picture", opts: [["auto", "in the stacked layout"], ["on", "always"], ["off", "never"]] },
+  { k: "credit", label: "Credit line" },
+  { k: "bare", label: "Hide everything but the pictures", key: "H" },
+  ["Recording"],
+  { k: "autorec", label: "Record every match by itself" },
+];
+function menuValue(it) {
+  if (it.k === "mode") return body.tethered ? "tethered" : "free";
+  if (it.body) return bodyCfg.now ? (it.check ? bodyCfg.now[it.k] >= 0.5 : bodyCfg.now[it.k]) : null;
+  if (it.k === "view") return view;
+  return S[it.k];
+}
+function resetFly() {                                          // the body starts again in the mode it is in: asking the body server
+  if (body.ok) fetch(body.url + "/mode?m=" + (body.tethered ? "tethered" : "free")).catch(() => {});      // for a mode always does that
+}
+function setS(k, v) {
+  const it = MENU.find(m => m.k === k) || {};
+  if (k === "mode") { if (body.ok) fetch(body.url + "/mode?m=" + v).catch(() => {}); return; }
+  if (it.body) { v = it.check ? (v ? 1 : 0) : +v; S[k] = v; keep(); if (bodyCfg.now) bodyCfg.now[k] = v; bodySettings({ [k]: v }); refreshMenu(); return; }
+  if (k === "view") { if (!body.ok) { $("bodystate").textContent = "the fly body is not running"; return; } view = v; }
+  S[k] = v; keep(); applyS();
+}
+function applyS() {
+  cam.rotate = S.rotate; showEdges = S.edges; slow = S.slow; exposure = S.exposure;
+  document.body.classList.toggle("clean", !S.panels); document.body.classList.toggle("bare", !!S.bare); document.body.classList.toggle("nocredit", !S.credit);
+  lab.key = "";
+  refreshMenu();
+}
+function buildMenu() {
+  const el = $("menu");
+  let h = `<h2>Settings</h2><div class="hint">Kept in this browser. <kbd>O</kbd> opens and closes this, <kbd>Esc</kbd> closes it.</div>`;
+  MENU.forEach((it, i) => {
+    if (Array.isArray(it)) { h += `<h3>${it[0]}</h3>`; return; }
+    if (it.hint) { h += `<div class="hint">${it.hint}<span id="${it.id || ""}"></span></div>`; return; }
+    const lab_ = `<label for="m${i}">${it.label}${it.key ? `<kbd>${it.key}</kbd>` : ""}</label>`;
+    let c;
+    if (it.opts) c = `<select id="m${i}">${it.opts.map(o => `<option value="${o[0]}">${o[1]}</option>`).join("")}</select>`;
+    else if (it.min !== undefined) c = `<div class="rng"><input type="range" id="m${i}" min="${it.min}" max="${it.max}" step="${it.step}"><span id="v${i}"></span></div>`;
+    else if (it.button) c = `<button id="m${i}">${it.button}</button>`;
+    else c = `<input type="checkbox" id="m${i}">`;
+    h += `<div class="set" id="r${i}">${lab_}${c}</div>`;
+  });
+  h += `<div class="foot"><button id="mrec">Record video <kbd>V</kbd></button><button id="mreset">Back to the defaults</button></div>`;
+  h += `<div class="hint" style="margin-top:10px">Also: drag turns a picture, the wheel zooms it, <kbd>F</kbd> full screen.</div>`;
+  el.innerHTML = h;
+  MENU.forEach((it, i) => {
+    const c = $("m" + i);
+    if (!c) return;
+    if (it.button) { c.addEventListener("click", () => { it.act(); c.blur(); }); return; }
+    const read = () => c.type === "checkbox" ? c.checked : (it.min !== undefined || typeof it.opts[0][0] === "number" ? +c.value : c.value);
+    c.addEventListener(it.min !== undefined ? "input" : "change", () => setS(it.k, read()));
+  });
+  $("mrec").addEventListener("click", () => { if (rec) stopRec(); else startRec(); refreshMenu(); });
+  $("mreset").addEventListener("click", () => {
+    for (const k in DEF) if (k !== "view") S[k] = DEF[k];
+    keep(); applyS();
+    if (bodyCfg.defaults) bodySettings(bodyCfg.defaults);
+  });
+  $("gear").addEventListener("click", () => toggleMenu());
+  for (const ev of ["pointerdown", "wheel"]) el.addEventListener(ev, e => e.stopPropagation());
+}
+function refreshMenu() {
+  if (!$("menu").firstChild) return;
+  MENU.forEach((it, i) => {
+    const c = $("m" + i);
+    if (!c) return;
+    const v = menuValue(it), off = (it.body || it.needsBody) && (!body.ok || (it.body && v === null));
+    $("r" + i).classList.toggle("off", !!off);
+    if (v === null || v === undefined) return;
+    if (c.type === "checkbox") c.checked = !!v;
+    else if (document.activeElement !== c || c.tagName === "SELECT") c.value = v;
+    if (it.fmt && $("v" + i)) $("v" + i).textContent = it.fmt(+v);
+  });
+  $("mrec").firstChild.textContent = rec ? "Stop recording " : "Record video ";
+  if ($("mpace")) $("mpace").textContent = bodyCfg.pace > 0 && bodyCfg.now && bodyCfg.pace < 0.9 * bodyCfg.now.speed ? " Right now this PC is busy and steps the body at " + bodyCfg.pace.toFixed(2) + " of real time." : "";
+}
+function toggleMenu(open) {
+  const el = $("menu");
+  el.classList.toggle("open", open === undefined ? !el.classList.contains("open") : open);
+  if (el.classList.contains("open")) { if (S.bare) setS("bare", false); refreshMenu(); }
+}
+buildMenu(); applyS();
+setInterval(() => { if ($("menu").classList.contains("open")) refreshMenu(); }, 500);        // (the fly's mode and the recording change outside the menu)
+addEventListener("keydown", e => {
+  const k = e.key.toLowerCase(), tag = (e.target && e.target.tagName) || "";
+  if (k === "escape") { toggleMenu(false); return; }
+  if (tag === "SELECT" || (tag === "INPUT" && e.target.type === "range" && k.startsWith("arrow"))) return;      // (the menu's own keys)
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (k === "o") toggleMenu();
+  else if (k === "h") { if (!S.bare) toggleMenu(false); setS("bare", !S.bare); }
+  else if (k === "r") setS("rotate", !S.rotate);
+  else if (k === "e") setS("edges", !S.edges);
+  else if (k === "s") setS("slow", !S.slow);
+  else if (k === "m") setS("view", { brain: "both", both: "stack", stack: "body", body: "brain" }[view]);
+  else if (k === "t") setS("mode", "toggle");
+  else if (k === "x") resetFly();
+  else if (k === "arrowup") setS("exposure", Math.min(4, S.exposure * 1.15));
+  else if (k === "arrowdown") setS("exposure", Math.max(0.4, S.exposure / 1.15));
+  else if (k === "f") { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }
+  else if (k === "v") { if (rec) stopRec(); else startRec(); refreshMenu(); }
+});
+init().catch(e => { $("live").textContent = "could not load: " + e.message; });
+</script>
+</body>
+</html>

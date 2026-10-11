@@ -1,0 +1,287 @@
+{
+ "n": 166700,
+ "in_play": 70636,
+ "layers": [
+  16894,
+  46393,
+  37748,
+  1332
+ ],
+ "hops": 3,
+ "classes": [
+  {
+   "name": "ol_intrinsic",
+   "count": 89403,
+   "in_play": 15553,
+   "color": [
+    0.62,
+    0.55,
+    1.0
+   ]
+  },
+  {
+   "name": "cb_intrinsic",
+   "count": 32164,
+   "in_play": 17817,
+   "color": [
+    0.85,
+    0.5,
+    1.0
+   ]
+  },
+  {
+   "name": "vnc_intrinsic",
+   "count": 13161,
+   "in_play": 11890,
+   "color": [
+    0.4,
+    0.62,
+    1.0
+   ]
+  },
+  {
+   "name": "visual_projection",
+   "count": 9201,
+   "in_play": 4607,
+   "color": [
+    1.0,
+    0.55,
+    0.8
+   ]
+  },
+  {
+   "name": "vnc_sensory",
+   "count": 6370,
+   "in_play": 6274,
+   "color": [
+    0.25,
+    0.9,
+    1.0
+   ]
+  },
+  {
+   "name": "ol_sensory",
+   "count": 6098,
+   "in_play": 5336,
+   "color": [
+    0.25,
+    0.9,
+    1.0
+   ]
+  },
+  {
+   "name": "cb_sensory",
+   "count": 4868,
+   "in_play": 4702,
+   "color": [
+    0.25,
+    0.9,
+    1.0
+   ]
+  },
+  {
+   "name": "ascending_neuron",
+   "count": 1846,
+   "in_play": 1845,
+   "color": [
+    0.45,
+    1.0,
+    0.5
+   ]
+  },
+  {
+   "name": "descending_neuron",
+   "count": 1314,
+   "in_play": 1314,
+   "color": [
+    1.0,
+    0.45,
+    0.15
+   ]
+  },
+  {
+   "name": "vnc_motor",
+   "count": 708,
+   "in_play": 277,
+   "color": [
+    1.0,
+    0.85,
+    0.2
+   ]
+  },
+  {
+   "name": "visual_centrifugal",
+   "count": 563,
+   "in_play": 235,
+   "color": [
+    0.75,
+    0.8,
+    1.0
+   ]
+  },
+  {
+   "name": "sensory_ascending",
+   "count": 537,
+   "in_play": 533,
+   "color": [
+    0.25,
+    0.9,
+    1.0
+   ]
+  },
+  {
+   "name": "cb_motor",
+   "count": 107,
+   "in_play": 99,
+   "color": [
+    1.0,
+    0.85,
+    0.2
+   ]
+  },
+  {
+   "name": "vnc_efferent",
+   "count": 94,
+   "in_play": 35,
+   "color": [
+    0.55,
+    0.9,
+    0.85
+   ]
+  },
+  {
+   "name": "cb_endocrine",
+   "count": 72,
+   "in_play": 20,
+   "color": [
+    1.0,
+    0.7,
+    0.55
+   ]
+  },
+  {
+   "name": "ENS",
+   "count": 50,
+   "in_play": 0,
+   "color": [
+    0.8,
+    0.95,
+    0.6
+   ]
+  },
+  {
+   "name": "vnc_tbc",
+   "count": 38,
+   "in_play": 26,
+   "color": [
+    0.62,
+    0.55,
+    1.0
+   ]
+  },
+  {
+   "name": "vnc_sensory_tbc",
+   "count": 36,
+   "in_play": 25,
+   "color": [
+    0.25,
+    0.9,
+    1.0
+   ]
+  },
+  {
+   "name": "vnc_endocrine",
+   "count": 22,
+   "in_play": 6,
+   "color": [
+    0.85,
+    0.5,
+    1.0
+   ]
+  },
+  {
+   "name": "cb_sensory_tbc",
+   "count": 14,
+   "in_play": 10,
+   "color": [
+    0.25,
+    0.9,
+    1.0
+   ]
+  },
+  {
+   "name": "sensory_descending",
+   "count": 12,
+   "in_play": 12,
+   "color": [
+    0.25,
+    0.9,
+    1.0
+   ]
+  },
+  {
+   "name": "efferent_ascending",
+   "count": 8,
+   "in_play": 8,
+   "color": [
+    0.45,
+    1.0,
+    0.5
+   ]
+  },
+  {
+   "name": "efferent_descending",
+   "count": 4,
+   "in_play": 4,
+   "color": [
+    1.0,
+    0.45,
+    0.15
+   ]
+  },
+  {
+   "name": "cb_efferent",
+   "count": 4,
+   "in_play": 4,
+   "color": [
+    0.4,
+    0.62,
+    1.0
+   ]
+  },
+  {
+   "name": "visual_projection_tbc",
+   "count": 2,
+   "in_play": 0,
+   "color": [
+    1.0,
+    0.55,
+    0.8
+   ]
+  },
+  {
+   "name": "sensory_ascending_tbc",
+   "count": 2,
+   "in_play": 2,
+   "color": [
+    0.25,
+    0.9,
+    1.0
+   ]
+  },
+  {
+   "name": "descending_neuron_tbc",
+   "count": 2,
+   "in_play": 2,
+   "color": [
+    1.0,
+    0.45,
+    0.15
+   ]
+  }
+ ],
+ "connections": 15283167,
+ "connections_in_play": 2992734,
+ "edges_drawn": 36000,
+ "credit": "Wiring: Janelia FlyEM male CNS v1.0 (CC-BY)"
+}

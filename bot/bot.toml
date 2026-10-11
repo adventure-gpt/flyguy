@@ -1,0 +1,18 @@
+#:schema https://rlbot.org/schemas/agent.json
+[settings]
+name = "flyguy"
+loadout_file = "loadout.toml"
+# run from this folder with the repository's virtual environment (see the README)
+run_command = "..\\.venv\\Scripts\\python run.py"
+run_command_linux = "../.venv/bin/python run.py"
+agent_id = "adventure-gpt/flyguy"
+logo_file = "logo.png"
+hivemind = true
+
+[details]
+developer = "adventure-gpt + Claude"
+description = "A network wired like a fruit fly's nervous system: one unit per neuron and one trainable strength per connection of the Janelia FlyEM male CNS connectome. Taught to play by a self-play bot."
+fun_fact = "Every decision crosses three synapses, from the fly's sensory neurons to the neurons that would move its body: 70,636 neurons and 3 million connections, in about 2.5 ms on one CPU core."
+source_link = "https://github.com/adventure-gpt/flyguy"
+language = "Python / PyTorch / C++"
+tags = ["1v1"]
