@@ -114,7 +114,7 @@ First, plainly, what is and is not in this repository.
 
 | | |
 |---|---|
-| **Works out of the box** | **teaching**: a fly network learns to choose what a teacher network chooses, from recorded game moments (`flyguy/teach.py`, plain PyTorch) |
+| **Works out of the box** | **teaching**: a fly network learns to choose what a teacher network chooses, from recorded game moments (`flyguy/teach.py`, plain PyTorch). It runs and it learns; what comes out after a few minutes does not play yet, and the section below says why |
 | **Here as source, needs your own data** | the fast CUDA teaching trainer flyguy was really made with (`flyguy/native/flyguy_train.cu`) |
 | **Not here** | the simulator, the opponents and the reinforcement-learning trainer. To train flyguy by playing, you bring those; the network itself is an ordinary PyTorch module |
 
@@ -145,13 +145,16 @@ as the connectome gives it: every connection at its synapse count, with the sign
 transmitter. The log looks like
 
 ```
-start | unseen: same first choice 0.002, distance 3.625 | ...
-step 250 | distance 2.9 | unseen: same first choice 0.31, distance 2.7 | 2,000 moments a second
+start | unseen: same first choice 0.004, distance 3.482 | 237,607 moments to learn from, 3.2 passes over them
+step 200 | distance 2.467 | unseen: same first choice 0.223, distance 2.372 | 1,745 moments a second
+step 600 | distance 1.726 | unseen: same first choice 0.376, distance 1.714 | 1,764 moments a second
+...
+step 6,000 | distance 1.253 | unseen: same first choice 0.468, distance 1.276 | 1,759 moments a second
 ```
 
 *same first choice* is the share of held-out moments on which the student picks the action the teacher would pick;
-*distance* is how far apart their answers are. The first should climb and the second fall. (The numbers in the
-second line are only there to show the shape of the log.)
+*distance* is how far apart their answers are. The first should climb and the second fall. These lines are from
+our own run of exactly this command on a laptop RTX 4070: seven minutes.
 
 **4. Play what you taught.**
 
@@ -159,20 +162,31 @@ second line are only there to show the shape of the log.)
 .venv\Scripts\python bot\run.py runs\teach\student.pt --selfcheck
 ```
 
-Then put `..\runs\teach\student.pt` after `run.py` in `bot/bot.toml` and start a match.
+Then put `..\runs\teach\student.pt` after `run.py` in `bot/bot.toml` and start a match. It will load and drive. Read
+on before you expect it to win anything.
 
-**What to expect.** A student that visibly copies its teacher, not a second flyguy. flyguy was taught on about a
-thousand times as many moments, almost all of them fresh from a simulator, with the teacher correcting the student
-in the situations its own mistakes led to. With one fixed file the student sees the same moments again and again.
+**What to expect: a student that agrees with its teacher and cannot play yet.** We measured the student from the
+run above. It picks its teacher's first choice on 47% of unseen moments, and against that teacher in simulation it
+scored once in twenty games and conceded 30 a game.
+
+That is not a bug, it is the main lesson of this project. Agreeing with the teacher on the teacher's own games
+says little about playing: a student that errs once is somewhere the teacher never was, and nothing in the file
+tells it what to do there. flyguy got past that with about a thousand times as many moments, fresh from a
+simulator, and with the student itself driving some of the cars while the teacher said what it would have done
+in the student's place.
+
+So use this command to see the mechanics, to compare networks (two hops against three, another graph), or to go
+on from weights that already play. It will not, by itself, make a bot from nothing.
 
 **Things to try**
 
 | | |
 |---|---|
-| `--start bot/model.pt` | go on from the published weights instead of from scratch |
+| `--start bot/model.pt` | go on from the published weights instead of from scratch: this keeps a network that plays |
+| the correct-me loop, with the game as the simulator | let your student play in RLBot with `FLYGUY_RECORD=1`, add its recordings to `--data`, teach again from `--start` your student, and repeat. The teacher then corrects the student where its own mistakes take it, which is what the fixed file cannot do. It is slow (an hour of 1v1 is 54,000 moments) and we have not run it ourselves |
 | `--hops 2` | a network that crosses two synapses instead of three: smaller, faster, and how much worse? |
 | `--teacher YOUR.pt` | any network in this repository's checkpoint format can teach |
-| `--kernel cuda` | hand-written CUDA kernels through [CuPy](https://cupy.dev/) (`pip install cupy-cuda12x` or the one for your CUDA; batch a multiple of 32): about twice as fast |
+| `--kernel cuda` | hand-written CUDA kernels through [CuPy](https://cupy.dev/) (`pip install cupy-cuda12x` or the one for your CUDA; batch a multiple of 32): 3,700 moments a second instead of 1,770 on that laptop, the same result |
 | another graph with `--graph` | `flyguy/build_graph.py` builds one from Janelia's files. A shuffled copy of the wiring would answer the question this project left open: does the fly's wiring help? |
 
 ### 3b. The CUDA trainer

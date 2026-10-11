@@ -24,11 +24,14 @@ another shape than the teacher's is fine, only the game moments have to be the s
 What is saved (--out) is the running average of the weights, as a checkpoint the bot plays:
     python bot/run.py runs/teach/student.pt --selfcheck          then give run.py that path in bot/bot.toml
 
-Speed: on a GPU about 2,000 moments a second at --batch 128 (--kernel cuda, with CuPy installed and a batch that
-is a multiple of 32: about twice that). On a CPU it runs, at --batch 16 and a few moments a second: enough to see
-that it works, not to teach anything. flyguy itself was taught with native/flyguy_train.cu on about a thousand
-times the 250,000 moments of the published set, most of them fresh from a simulator - so this makes a network that
-visibly copies its teacher, not another flyguy.
+Speed and what to expect, measured on a laptop RTX 4070 with --batch 128 and the 250,000 published moments:
+1,770 moments a second through PyTorch, 3,700 with --kernel cuda (CuPy installed, a batch that is a multiple of
+32). 6,000 steps - seven minutes - take a new network from the teacher's first choice on 0.4% of unseen moments to
+47%. THAT STUDENT CANNOT PLAY YET: against its teacher it scored once in twenty games and conceded 30 a game.
+Agreeing with the teacher on the teacher's own games says little about playing, because a student that errs ends
+up where the teacher never goes. flyguy itself was taught (native/flyguy_train.cu) on about a thousand times as
+many moments, fresh from a simulator, with the student driving some of the cars and the teacher correcting it
+there. On a CPU this runs at --batch 16 and about 20 moments a second: enough to see that it works.
 """
 from __future__ import annotations
 

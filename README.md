@@ -128,7 +128,9 @@ bot list, put **flyguy** on a team and start a match. 1v1 is its game.
 ```
 
 The moments are a [download](https://github.com/adventure-gpt/flyguy/releases/tag/moments-v1), or you record your own by
-letting flyguy play. What you taught then plays in RLBot like the original.
+letting flyguy play. Seven minutes of this on a laptop card gets a student that picks its teacher's first choice on
+47% of unseen moments, and still loses to it by 30 goals a game. Why that is, and what it took to get past it, is
+the most useful thing in the guide.
 
 **The full walk-through is [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md):** Linux, what to do when something
 does not work, the options, and an honest account of the training: what works out of the box (teaching), what is
